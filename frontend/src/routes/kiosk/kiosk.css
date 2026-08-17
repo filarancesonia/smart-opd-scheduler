@@ -1,0 +1,249 @@
+/* Kiosk surface.
+ *
+ * Assumptions that drive every number here: the screen is a wall-mounted
+ * touch panel, the person using it may never have used one before, they may
+ * be standing with a bag in one hand, and they read Hindi. So: no small text,
+ * no hover-only affordances, no keyboard, and one decision per screen.
+ */
+
+.kiosk {
+  min-height: 100%;
+  background: var(--page);
+  display: flex;
+  flex-direction: column;
+}
+
+.kiosk__bar {
+  background: var(--brand-700);
+  color: #fff;
+  padding: 18px 32px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.kiosk__title {
+  font-size: 1.5rem;
+  font-weight: 700;
+}
+
+.kiosk__body {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 32px;
+}
+
+.kiosk__panel {
+  width: 100%;
+  max-width: 780px;
+  background: var(--surface);
+  border-radius: 24px;
+  border: 1px solid var(--line);
+  box-shadow: var(--shadow-lg);
+  padding: 40px;
+}
+
+.kiosk__step {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--brand-600);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin-bottom: 8px;
+}
+
+.kiosk__question {
+  font-size: 2.1rem;
+  font-weight: 700;
+  line-height: 1.3;
+  margin: 0 0 28px;
+}
+
+.kiosk__sub {
+  font-size: 1.15rem;
+  color: var(--ink-2);
+  margin: -18px 0 28px;
+}
+
+/* Big choice buttons, stacked, one decision at a time. */
+.kiosk__choices {
+  display: grid;
+  gap: 14px;
+}
+
+.kiosk__choices--two {
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+}
+
+.kiosk-choice {
+  appearance: none;
+  font: inherit;
+  text-align: start;
+  background: var(--surface-2);
+  border: 2px solid var(--line);
+  border-radius: 18px;
+  padding: 22px 26px;
+  cursor: pointer;
+  min-height: 88px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 4px;
+  transition: border-color 0.12s ease, background 0.12s ease;
+}
+
+.kiosk-choice:hover:not(:disabled),
+.kiosk-choice:focus-visible {
+  border-color: var(--brand-500);
+  background: var(--brand-50);
+}
+
+.kiosk-choice[aria-pressed='true'] {
+  border-color: var(--brand-600);
+  background: var(--brand-50);
+}
+
+.kiosk-choice:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.kiosk-choice__title {
+  font-size: 1.35rem;
+  font-weight: 700;
+}
+
+.kiosk-choice__sub {
+  font-size: 1rem;
+  color: var(--ink-2);
+}
+
+/* Numeric entry */
+.kiosk__display {
+  font-family: var(--font-mono);
+  font-size: 2.6rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-align: center;
+  background: var(--surface-2);
+  border: 2px solid var(--line);
+  border-radius: 16px;
+  padding: 18px;
+  margin-bottom: 20px;
+  min-height: 88px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.kiosk__display--empty {
+  color: var(--ink-3);
+}
+
+.keypad {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+}
+
+.keypad button {
+  appearance: none;
+  font: inherit;
+  font-size: 1.9rem;
+  font-weight: 700;
+  min-height: 82px;
+  border-radius: 16px;
+  border: 2px solid var(--line);
+  background: var(--surface);
+  color: var(--ink);
+  cursor: pointer;
+}
+
+.keypad button:hover:not(:disabled) {
+  background: var(--brand-50);
+  border-color: var(--brand-500);
+}
+
+.keypad button:active:not(:disabled) {
+  transform: translateY(1px);
+}
+
+.keypad button.keypad--wide {
+  font-size: 1.2rem;
+}
+
+.kiosk__actions {
+  display: flex;
+  gap: 14px;
+  margin-top: 28px;
+}
+
+.kiosk__actions .btn {
+  flex: 1;
+  min-height: 76px;
+  font-size: 1.25rem;
+  border-radius: 16px;
+}
+
+/* Printed slip */
+.slip {
+  border: 2px dashed var(--line);
+  border-radius: 18px;
+  padding: 28px;
+  background: var(--surface-2);
+}
+
+.slip__reference {
+  font-family: var(--font-mono);
+  font-size: 2.8rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-align: center;
+  margin: 8px 0 18px;
+}
+
+.slip__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 16px;
+  margin-bottom: 18px;
+}
+
+.slip__label {
+  font-size: 0.9rem;
+  color: var(--ink-2);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.slip__value {
+  font-size: 1.35rem;
+  font-weight: 700;
+}
+
+.slip__message {
+  font-size: 1.1rem;
+  line-height: 1.7;
+  border-top: 1px solid var(--line);
+  padding-top: 16px;
+}
+
+@media print {
+  .kiosk__bar,
+  .kiosk__actions,
+  .kiosk__step {
+    display: none !important;
+  }
+  .kiosk__panel {
+    box-shadow: none;
+    border: 0;
+    max-width: none;
+    padding: 0;
+  }
+  body {
+    background: #fff;
+  }
+}

@@ -1,0 +1,228 @@
+/* Corridor display board.
+ *
+ * Read from across a waiting hall by people who are anxious and possibly
+ * standing. Everything is sized for distance, the "now serving" token is the
+ * single loudest element on the screen, and both languages are shown at once
+ * because there is no one to press a toggle.
+ */
+
+.board {
+  min-height: 100%;
+  background: var(--brand-900);
+  color: #fff;
+  display: flex;
+  flex-direction: column;
+  padding: clamp(16px, 2.5vw, 40px);
+  gap: clamp(14px, 2vw, 28px);
+}
+
+.board__head {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+
+.board__doctor {
+  font-size: clamp(1.6rem, 3.4vw, 3.2rem);
+  font-weight: 800;
+  line-height: 1.1;
+}
+
+.board__room {
+  font-size: clamp(1rem, 1.8vw, 1.7rem);
+  color: #9fd8d0;
+  font-weight: 600;
+}
+
+.board__status {
+  margin-inline-start: auto;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: clamp(1rem, 1.7vw, 1.6rem);
+  font-weight: 700;
+  padding: 10px 22px;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+
+.board__status--in {
+  background: #12603f;
+  color: #b7f0d0;
+}
+
+.board__status--out {
+  background: #6b3a06;
+  color: #ffd9a0;
+}
+
+.board__dot {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.board__status--in .board__dot {
+  animation: pulse 2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.35;
+  }
+}
+
+.board__main {
+  flex: 1;
+  display: grid;
+  grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
+  gap: clamp(14px, 2vw, 28px);
+  min-height: 0;
+}
+
+@media (max-width: 900px) {
+  .board__main {
+    grid-template-columns: 1fr;
+  }
+}
+
+.board__serving {
+  background: linear-gradient(160deg, #0f766e, #084a42);
+  border-radius: 28px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: clamp(20px, 3vw, 48px);
+  text-align: center;
+}
+
+.board__serving-label {
+  font-size: clamp(1rem, 1.8vw, 1.8rem);
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #b7ece5;
+}
+
+.board__token {
+  font-size: clamp(6rem, 22vw, 18rem);
+  font-weight: 900;
+  line-height: 0.95;
+  font-variant-numeric: tabular-nums;
+  margin: clamp(6px, 1vw, 18px) 0;
+}
+
+.board__token--idle {
+  font-size: clamp(2rem, 6vw, 5rem);
+  color: #7fc4bb;
+}
+
+.board__next {
+  background: rgb(255 255 255 / 6%);
+  border-radius: 28px;
+  padding: clamp(16px, 2vw, 30px);
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.board__next h2 {
+  font-size: clamp(1rem, 1.6vw, 1.6rem);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #9fd8d0;
+  margin-bottom: 14px;
+}
+
+.board__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  overflow: hidden;
+}
+
+.board__row {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  background: rgb(255 255 255 / 8%);
+  border-radius: 16px;
+  padding: clamp(10px, 1.4vw, 18px) clamp(14px, 1.8vw, 24px);
+}
+
+.board__row--priority {
+  background: rgb(255 196 92 / 18%);
+  box-shadow: inset 0 0 0 2px rgb(255 196 92 / 45%);
+}
+
+.board__row-token {
+  font-size: clamp(1.6rem, 3vw, 2.8rem);
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  min-width: 2.2em;
+}
+
+.board__row-name {
+  font-size: clamp(1.1rem, 1.9vw, 1.9rem);
+  font-weight: 600;
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.board__row-wait {
+  font-size: clamp(0.95rem, 1.5vw, 1.5rem);
+  color: #9fd8d0;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.board__foot {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  background: rgb(255 255 255 / 8%);
+  border-radius: 20px;
+  padding: clamp(12px, 1.6vw, 22px) clamp(16px, 2vw, 28px);
+}
+
+.board__line {
+  font-size: clamp(1.05rem, 2vw, 2rem);
+  font-weight: 600;
+  line-height: 1.5;
+}
+
+.board__line--en {
+  color: #9fd8d0;
+  font-size: clamp(0.95rem, 1.5vw, 1.5rem);
+  font-weight: 500;
+}
+
+.board__updated {
+  position: fixed;
+  inset-block-end: 10px;
+  inset-inline-end: 16px;
+  font-size: 0.8rem;
+  color: rgb(255 255 255 / 40%);
+}
+
+.board__setup {
+  margin: auto;
+  background: var(--surface);
+  color: var(--ink);
+  border-radius: 20px;
+  padding: 36px;
+  max-width: 520px;
+  width: 100%;
+}

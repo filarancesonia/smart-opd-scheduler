@@ -16,6 +16,12 @@ models/*.joblib
 .coverage
 htmlcov/
 
+# Frontend
+node_modules/
+frontend/dist/
+frontend/.vite/
+*.tsbuildinfo
+
 .idea/
 .vscode/
 .DS_Store
