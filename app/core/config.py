@@ -26,6 +26,9 @@ class Settings(BaseSettings):
     access_token_expire_minutes: int = 60
     refresh_token_expire_days: int = 7
     field_encryption_key: str = "change-me-too"
+    # scrypt cost as a power of two. 14 is the OWASP baseline; the test suite
+    # lowers it so hashing does not dominate the run.
+    scrypt_cost_log2: int = 14
 
     # Room 1 - device gateway
     device_api_key: str = "dev-device-key"

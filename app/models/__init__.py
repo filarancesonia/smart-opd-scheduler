@@ -5,6 +5,11 @@ module's models are re-exported here so ``Base.metadata`` is complete before
 ``create_all`` runs. Each new room appends its import below.
 """
 
+from app.modules.booking.models import (
+    Appointment,
+    IVRSession,
+    Patient,
+)
 from app.modules.doctors.models import (
     Department,
     Doctor,
@@ -31,4 +36,7 @@ __all__ = [
     "PresenceSignal",
     "PresenceState",
     "PresenceEvent",
+    "Patient",
+    "Appointment",
+    "IVRSession",
 ]

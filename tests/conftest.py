@@ -8,8 +8,13 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
 
+from app.core.config import settings
 from app.core.database import Base, get_db
 from app.main import create_app
+
+# Production hashing cost would add minutes to a suite that registers hundreds
+# of accounts. Correctness of the hash format is covered in test_identity.py.
+settings.scrypt_cost_log2 = 11
 
 
 @pytest.fixture

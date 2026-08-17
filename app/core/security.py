@@ -39,7 +39,6 @@ ANALYTICS_ROLES = frozenset({Role.ADMIN, Role.HEALTH_DEPT})
 
 # --- password hashing ------------------------------------------------------
 
-_SCRYPT_N = 2**14
 _SCRYPT_R = 8
 _SCRYPT_P = 1
 _SALT_BYTES = 16
@@ -47,17 +46,24 @@ _KEY_BYTES = 32
 
 
 def hash_password(password: str) -> str:
-    """Return a self-describing ``scrypt$n$r$p$salt$key`` hash string."""
+    """Return a self-describing ``scrypt$n$r$p$salt$key`` hash string.
+
+    The cost factor is read per call rather than frozen at import, so the test
+    suite can turn it down without weakening the deployed default. Because the
+    parameters travel inside the hash, raising the cost later leaves existing
+    passwords verifiable.
+    """
+    n = 2**settings.scrypt_cost_log2
     salt = secrets.token_bytes(_SALT_BYTES)
     key = hashlib.scrypt(
         password.encode("utf-8"),
         salt=salt,
-        n=_SCRYPT_N,
+        n=n,
         r=_SCRYPT_R,
         p=_SCRYPT_P,
         dklen=_KEY_BYTES,
     )
-    return f"scrypt${_SCRYPT_N}${_SCRYPT_R}${_SCRYPT_P}${salt.hex()}${key.hex()}"
+    return f"scrypt${n}${_SCRYPT_R}${_SCRYPT_P}${salt.hex()}${key.hex()}"
 
 
 def verify_password(password: str, stored: str) -> bool:
