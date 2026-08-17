@@ -80,6 +80,24 @@ def verify_password(password: str, stored: str) -> bool:
     return hmac.compare_digest(expected, actual)
 
 
+# --- device credential fingerprints ----------------------------------------
+
+
+def credential_fingerprint(raw_value: str) -> str:
+    """Keyed hash of an RFID tag / BLE id / face-template digest.
+
+    Rooms 1 and 2 only ever persist this, never the raw identifier. It is a
+    keyed HMAC rather than a plain hash so an attacker who steals the database
+    still cannot brute-force the (short, low-entropy) tag number space without
+    also holding the server secret.
+    """
+    return hmac.new(
+        settings.secret_key.encode("utf-8"),
+        raw_value.strip().encode("utf-8"),
+        hashlib.sha256,
+    ).hexdigest()
+
+
 # --- JSON web tokens -------------------------------------------------------
 
 
