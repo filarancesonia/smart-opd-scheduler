@@ -16,8 +16,10 @@ export function Board() {
   const [hasKey, setHasKey] = useState(() => Boolean(deviceKey.get()))
   const id = Number(doctorId)
 
+  // No key means no call. Polling a request that is guaranteed to 401 every
+  // five seconds would be pure noise on a screen that is not set up yet.
   const { data, error, lastUpdated } = usePolling(
-    () => api.board(id),
+    () => (hasKey ? api.board(id) : Promise.resolve(null)),
     REFRESH_MS,
     [id, hasKey],
   )

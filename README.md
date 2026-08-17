@@ -122,11 +122,22 @@ npm install --prefix frontend && npm run dev --prefix frontend
 The kiosk and corridor board ask for a device key on first use; in development
 it is `dev-device-key`.
 
-Run the tests:
+Run the tests — 261 backend, 150 frontend:
 
 ```bash
 pytest -q
 ```
+
+```bash
+npm test --prefix frontend
+```
+
+Frontend coverage sits at 96% of statements (`npm run test:coverage --prefix frontend`).
+Two of those tests exist because of specific bugs found by driving the real
+thing, and both were checked by reintroducing the bug and watching them fail:
+
+- `usePolling` skipping its first fetch in a background tab
+- the kiosk keypad dropping digits when taps outran a re-render
 
 ## Layout
 
@@ -164,8 +175,11 @@ Honest about what is not done:
   localStorage. Anything in a browser is readable by whoever controls it; this
   is acceptable only because those screens run on hospital-owned hardware in
   kiosk mode. A real deployment should terminate the key in a local agent.
-- The frontend has no automated tests. Every surface was driven manually
-  against a live backend, but that is not the same thing.
+- Frontend tests stub `fetch` rather than running against the real API, so
+  they verify the client's half of the contract and not the contract itself.
+  A schema change on the server would keep them green.
+- There are no end-to-end tests driving a real browser against a real backend,
+  and no visual regression tests.
 - `scripts/seed_demo.py` builds the duty window around the current hour so the
   demo works whenever it is run. Seed it at 2am and the clinic hours will look
   strange — correct, but strange.

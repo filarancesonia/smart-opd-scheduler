@@ -387,7 +387,7 @@ a {
   gap: 6px;
 }
 
-.field label {
+.field__label {
   font-weight: 600;
   font-size: 0.9rem;
 }

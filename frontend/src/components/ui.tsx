@@ -71,6 +71,13 @@ export function Stat({
   )
 }
 
+/** A labelled control.
+ *
+ * The label *wraps* the input rather than sitting beside it, which associates
+ * the two implicitly. A bare <label> next to an input looks identical and is
+ * announced by a screen reader as an unlabelled field — and on a touchscreen
+ * it also loses the label as a tap target for the input.
+ */
 export function Field({
   label,
   hint,
@@ -81,11 +88,11 @@ export function Field({
   children: ReactNode
 }) {
   return (
-    <div className="field">
-      <label>{label}</label>
+    <label className="field">
+      <span className="field__label">{label}</span>
       {children}
       {hint && <span className="field__hint">{hint}</span>}
-    </div>
+    </label>
   )
 }
 

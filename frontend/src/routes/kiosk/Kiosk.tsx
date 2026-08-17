@@ -227,21 +227,28 @@ export function Kiosk() {
             <>
               <div className="kiosk__step">2 / 4</div>
               <h1 className="kiosk__question hi">{t('kioskYourName')}</h1>
+              {/* The heading already asks for the name, so the input takes an
+                  aria-label rather than repeating it visibly. The age field
+                  needs its own visible label, and wraps its input so the
+                  association survives for a screen reader. */}
               <input
                 value={newName}
                 onChange={(e) => setNewName(e.target.value)}
                 placeholder={pick('पूरा नाम', 'Full name')}
+                aria-label={t('kioskYourName')}
                 style={{ fontSize: '1.6rem', minHeight: 80, marginBottom: 18 }}
                 autoFocus
               />
-              <label style={{ fontSize: '1.15rem', fontWeight: 600 }}>{t('kioskYourAge')}</label>
-              <input
-                value={newAge}
-                onChange={(e) => setNewAge(e.target.value.replace(/\D/g, '').slice(0, 3))}
-                inputMode="numeric"
-                placeholder="45"
-                style={{ fontSize: '1.6rem', minHeight: 80, marginTop: 8 }}
-              />
+              <label style={{ display: 'block' }}>
+                <span style={{ fontSize: '1.15rem', fontWeight: 600 }}>{t('kioskYourAge')}</span>
+                <input
+                  value={newAge}
+                  onChange={(e) => setNewAge(e.target.value.replace(/\D/g, '').slice(0, 3))}
+                  inputMode="numeric"
+                  placeholder="45"
+                  style={{ fontSize: '1.6rem', minHeight: 80, marginTop: 8 }}
+                />
+              </label>
               <div className="kiosk__actions">
                 <button type="button" className="btn btn--ghost" onClick={() => setStep('phone')}>
                   {t('back')}
