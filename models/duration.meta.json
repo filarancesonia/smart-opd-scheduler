@@ -1,0 +1,10 @@
+{
+  "version": "20260817194628",
+  "n_samples": 746,
+  "trained_on_synthetic": true,
+  "metrics": {
+    "mae_minutes": 2.14,
+    "r2": 0.521,
+    "test_size": 150
+  }
+}

@@ -58,10 +58,35 @@ specific consent record, and destroyed the moment that consent is withdrawn.
 mock gateways are flagged `is_mock` all the way through to the API. A demo that
 cannot be told apart from a real integration will eventually be mistaken for one.
 
+## The five screens
+
+The backend is API-first; the frontend is five surfaces over it, because the
+people involved are not one audience.
+
+| Surface | Route | Who it is for |
+|---|---|---|
+| **Patient app** | `/` | Book, see whether the doctor has actually arrived, watch your token |
+| **Kiosk** | `/kiosk` | Walk-ins with no smartphone — on-screen keypad, Hindi first, prints a slip |
+| **Corridor board** | `/board/:doctorId` | The waiting hall — huge tokens, read from ten metres |
+| **Doctor console** | `/doctor` | Run the queue: call next, start, complete, plus the AI plan |
+| **Admin dashboard** | `/admin` | Live presence, attendance, wait times, channel mix, alerts |
+
+Kiosk and board authenticate as provisioned devices with a device key, not a
+user login. The patient, doctor and admin surfaces use a normal JWT session.
+
+Everything is bilingual with a one-tap toggle, and Hindi is the default —
+the people this is for read Hindi first. No web fonts are loaded: a hospital
+network is often slow, and a screen that renders late is a screen nobody
+trusts.
+
 ## Stack
 
 Python 3.12 · FastAPI · SQLAlchemy 2.0 · SQLite in dev (Postgres-ready) ·
 scikit-learn for the Room 4 models · cryptography for field encryption.
+
+React 19 · TypeScript · Vite · React Router. No UI framework and no CSS
+library — the design system is ~600 lines of plain CSS with tokens, so there
+is no build-tool churn and nothing to upgrade before a demo.
 
 Passwords use stdlib `scrypt` rather than bcrypt so the project installs with no
 native build toolchain — relevant when judges clone it onto a fresh machine.
@@ -77,11 +102,25 @@ uvicorn app.main:app --reload
 
 Interactive API docs: <http://127.0.0.1:8000/docs>
 
-Seed the AI models with synthetic history for a demo:
+Seed a whole demo hospital — three doctors, a live queue, thirty days of
+attendance history, and trained models:
 
 ```bash
-python -m app.modules.scheduling.train --synthetic 2000
+python -m scripts.seed_demo
 ```
+
+It prints the logins. One doctor is deliberately rostered-but-absent, because
+that is the case the system exists for and a demo without one proves nothing.
+
+Then the frontend, in a second terminal:
+
+```bash
+npm install --prefix frontend && npm run dev --prefix frontend
+```
+
+<http://localhost:5173> — the Vite dev server proxies `/api` to the backend.
+The kiosk and corridor board ask for a device key on first use; in development
+it is `dev-device-key`.
 
 Run the tests:
 
@@ -121,3 +160,12 @@ Honest about what is not done:
 - Face embeddings are matched by cosine similarity against every active
   template, which is linear in the number of doctors. Fine for one hospital,
   not for a state.
+- The device key for the kiosk and corridor board is held in browser
+  localStorage. Anything in a browser is readable by whoever controls it; this
+  is acceptable only because those screens run on hospital-owned hardware in
+  kiosk mode. A real deployment should terminate the key in a local agent.
+- The frontend has no automated tests. Every surface was driven manually
+  against a live backend, but that is not the same thing.
+- `scripts/seed_demo.py` builds the duty window around the current hour so the
+  demo works whenever it is run. Seed it at 2am and the clinic hours will look
+  strange — correct, but strange.

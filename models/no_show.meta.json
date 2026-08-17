@@ -1,0 +1,11 @@
+{
+  "version": "20260817194628",
+  "n_samples": 900,
+  "trained_on_synthetic": true,
+  "metrics": {
+    "roc_auc": 0.577,
+    "brier": 0.15,
+    "base_rate": 0.171,
+    "test_size": 180
+  }
+}
