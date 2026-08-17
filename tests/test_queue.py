@@ -7,6 +7,7 @@ import pytest
 from app.core.config import settings
 from app.core.timeutil import local_now, local_today
 from app.modules.queue import service
+from app.modules.queue.models import QueueEntry
 
 DEVICE_HEADERS = {"X-Device-Key": settings.device_api_key}
 
@@ -364,6 +365,76 @@ def test_no_eta_is_invented_while_the_doctor_is_absent(
     queue = client.get(f"/api/v1/queue/doctors/{clinic['id']}", headers=headers).json()
     assert queue["doctor_present"] is False
     assert queue["entries"][0]["estimated_wait_minutes"] is None
+
+
+def test_an_eta_stops_being_shown_when_the_doctor_leaves(
+    client, admin, open_queue, db_session
+):
+    """The estimates were honest when written. They stop being honest the
+    moment the doctor walks out, and nothing writes to the queue to say so."""
+    _, headers = admin
+    _, appointment = _make_patient(
+        client, db_session, "Asha Devi", "9111100161", open_queue["id"]
+    )
+    entry = _join(client, headers, appointment.id)
+
+    before = client.get(
+        f"/api/v1/queue/doctors/{open_queue['id']}", headers=headers
+    ).json()
+    assert before["entries"][0]["estimated_wait_minutes"] is not None
+
+    client.post(
+        "/api/v1/presence/manual",
+        json={"doctor_id": open_queue["id"], "status": "absent"},
+        headers=headers,
+    )
+
+    after = client.get(
+        f"/api/v1/queue/doctors/{open_queue['id']}", headers=headers
+    ).json()
+    assert after["doctor_present"] is False
+    assert after["entries"][0]["estimated_wait_minutes"] is None
+
+    board = client.get(
+        f"/api/v1/queue/doctors/{open_queue['id']}/board", headers=DEVICE_HEADERS
+    ).json()
+    assert board["next_tokens"][0]["estimated_wait_minutes"] is None
+
+    # The number is still on disk — nothing rewrote it. It is the serialiser
+    # that declines to repeat it, so single-entry responses are covered too.
+    row = db_session.get(QueueEntry, entry["id"])
+    assert row.estimated_wait_minutes is not None
+    assert service.entry_out(db_session, row).estimated_wait_minutes is None
+
+
+def test_an_eta_survives_the_doctor_stepping_out_mid_consultation(
+    client, admin, open_queue, db_session
+):
+    """A consultation in progress is reason enough to keep estimating: the
+    reader may simply have missed a doorway, and someone is plainly being seen."""
+    _, headers = admin
+    _, appointment = _make_patient(
+        client, db_session, "Asha Devi", "9111100171", open_queue["id"]
+    )
+    first = _join(client, headers, appointment.id)
+    _, second_appt = _make_patient(
+        client, db_session, "Ramesh Yadav", "9111100172", open_queue["id"]
+    )
+    _join(client, headers, second_appt.id)
+
+    client.post(f"/api/v1/queue/doctors/{open_queue['id']}/call-next", headers=headers)
+    client.post(f"/api/v1/queue/entries/{first['id']}/start", headers=headers)
+    client.post(
+        "/api/v1/presence/manual",
+        json={"doctor_id": open_queue["id"], "status": "absent"},
+        headers=headers,
+    )
+
+    queue = client.get(
+        f"/api/v1/queue/doctors/{open_queue['id']}", headers=headers
+    ).json()
+    waiting = [e for e in queue["entries"] if e["status"] == "waiting"]
+    assert waiting[0]["estimated_wait_minutes"] is not None
 
 
 def test_observed_durations_replace_predictions_as_the_clinic_runs(

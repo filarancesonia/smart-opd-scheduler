@@ -329,16 +329,34 @@ def recompute_etas(db: Session, session: QueueSession) -> None:
         # done rather than reporting a negative wait.
         cursor = max(expected_end, now + timedelta(minutes=1))
 
+    # The doctor is not here and nothing is running. Any number we printed
+    # would be a guess dressed up as information.
+    meaningful = present or in_progress is not None
+
     for entry in entries:
-        if not present and in_progress is None:
-            # The doctor is not here and nothing is running. Any number we
-            # printed would be a guess dressed up as information.
+        if not meaningful:
             entry.estimated_wait_minutes = None
             continue
         entry.estimated_wait_minutes = max(minutes_between(now, cursor), 0)
         cursor += timedelta(minutes=_effective_duration(session, entry))
 
     db.commit()
+
+
+def eta_is_meaningful(db: Session, session: QueueSession) -> bool:
+    """Whether a stored estimate still stands for anything.
+
+    `recompute_etas` blanks the estimates, but it only runs when the queue is
+    written to. A doctor can walk out — or a presence signal can simply go
+    stale — long after the last write, and the numbers on disk would outlive
+    the conditions that justified them. Re-checking on the way out keeps the
+    promise on every read, whenever it was last computed.
+    """
+    if _doctor_present(db, session.doctor_id):
+        return True
+    return any(
+        e.status == QueueEntryStatus.IN_PROGRESS for e in open_entries(db, session.id)
+    )
 
 
 def _doctor_present(db: Session, doctor_id: int) -> bool:
@@ -512,13 +530,20 @@ def mark_no_show(db: Session, entry_id: int) -> QueueEntry:
 # --- views -----------------------------------------------------------------
 
 
-def entry_out(db: Session, entry: QueueEntry) -> QueueEntryOut:
+def entry_out(
+    db: Session, entry: QueueEntry, eta_visible: bool | None = None
+) -> QueueEntryOut:
     patient = db.get(Patient, entry.patient_id)
+    if eta_visible is None:
+        # Callers holding one entry do not know the session's state; callers
+        # rendering a whole queue resolve it once and pass it in.
+        session = db.get(QueueSession, entry.session_id)
+        eta_visible = session is None or eta_is_meaningful(db, session)
+    columns = {c.name: getattr(entry, c.name) for c in entry.__table__.columns}
+    if not eta_visible:
+        columns["estimated_wait_minutes"] = None
     return QueueEntryOut.model_validate(
-        {
-            **{c.name: getattr(entry, c.name) for c in entry.__table__.columns},
-            "patient_name": patient.full_name if patient else None,
-        }
+        {**columns, "patient_name": patient.full_name if patient else None}
     )
 
 
@@ -532,6 +557,8 @@ def get_queue(db: Session, doctor_id: int, session_date: date | None = None) -> 
         (e for e in entries if e.status == QueueEntryStatus.IN_PROGRESS), None
     ) or next((e for e in entries if e.status == QueueEntryStatus.CALLED), None)
 
+    eta_visible = eta_is_meaningful(db, session)
+
     return QueueOut(
         session_id=session.id,
         doctor_id=doctor_id,
@@ -544,7 +571,7 @@ def get_queue(db: Session, doctor_id: int, session_date: date | None = None) -> 
         completed_count=session.completed_count,
         observed_avg_minutes=session.observed_avg_minutes,
         now_serving=serving.token_number if serving else None,
-        entries=[entry_out(db, e) for e in entries],
+        entries=[entry_out(db, e, eta_visible) for e in entries],
     )
 
 
@@ -558,13 +585,13 @@ def _mask(name: str | None) -> str:
     return f"{parts[0]} {parts[-1][0]}."
 
 
-def _board_row(db: Session, entry: QueueEntry) -> BoardRow:
+def _board_row(db: Session, entry: QueueEntry, eta_visible: bool) -> BoardRow:
     patient = db.get(Patient, entry.patient_id)
     return BoardRow(
         token_number=entry.token_number,
         display_name=_mask(patient.full_name if patient else None),
         status=entry.status,
-        estimated_wait_minutes=entry.estimated_wait_minutes,
+        estimated_wait_minutes=entry.estimated_wait_minutes if eta_visible else None,
         is_priority=entry.priority_tier > 0,
     )
 
@@ -579,6 +606,10 @@ def get_board(db: Session, doctor_id: int) -> DisplayBoard:
     serving = next(
         (e for e in entries if e.status == QueueEntryStatus.IN_PROGRESS), None
     ) or next((e for e in entries if e.status == QueueEntryStatus.CALLED), None)
+
+    eta_visible = present or any(
+        e.status == QueueEntryStatus.IN_PROGRESS for e in entries
+    )
 
     upcoming = sorted(
         [
@@ -607,7 +638,7 @@ def get_board(db: Session, doctor_id: int) -> DisplayBoard:
         status_line_hi=hi,
         status_line_en=en,
         now_serving=serving.token_number if serving else None,
-        next_tokens=[_board_row(db, e) for e in upcoming],
+        next_tokens=[_board_row(db, e, eta_visible) for e in upcoming],
         updated_at=utcnow(),
     )
 
@@ -630,7 +661,7 @@ def my_position(db: Session, patient_id: int, doctor_id: int) -> MyPosition:
         and e.status in (QueueEntryStatus.WAITING, QueueEntryStatus.SKIPPED, QueueEntryStatus.CALLED)
     )
 
-    wait = entry.estimated_wait_minutes
+    wait = entry.estimated_wait_minutes if eta_is_meaningful(db, session) else None
     call_time = (
         utcnow() + timedelta(minutes=wait)
         if wait is not None and entry.status == QueueEntryStatus.WAITING

@@ -31,10 +31,16 @@ function stubConsole(
 const renderConsole = () =>
   renderApp(<DoctorConsole />, { as: { id: 2, role: 'doctor' }, lang: 'en' })
 
+// Room 1 lets reception and admin record presence by hand when a reader
+// fails. A different id than the doctor's, so the console treats them as
+// someone operating another person's queue.
+const renderAsReception = () =>
+  renderApp(<DoctorConsole />, { as: { id: 9, role: 'staff' }, lang: 'en' })
+
 describe('presence', () => {
-  it('offers to mark arrival when the doctor is not recorded as present', async () => {
+  it('offers reception the arrival button when the doctor is not recorded as present', async () => {
     stubConsole({ presence: { status: 'unknown', deviation: 'absent_while_rostered', minutes_late: 76 } })
-    renderConsole()
+    renderAsReception()
 
     // Awaited: the button also renders in the pre-load state, so asserting on
     // it alone would pass before presence had actually arrived.
@@ -42,11 +48,33 @@ describe('presence', () => {
     expect(screen.getByRole('button', { name: 'Mark me arrived' })).toBeInTheDocument()
   })
 
-  it('hides the arrival button once presence is recorded', async () => {
-    stubConsole()
+  it('never offers a doctor the button to declare their own arrival', async () => {
+    // Presence is what the hospital observed, not what the doctor asserts —
+    // the endpoint refuses them, so the console must not hold out the offer.
+    stubConsole({ presence: { status: 'unknown', deviation: 'absent_while_rostered', minutes_late: 76 } })
     renderConsole()
 
-    await screen.findByText('Dr. Anil Sharma')
+    expect(await screen.findByText('76 minutes late')).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Mark me arrived' })).not.toBeInTheDocument()
+  })
+
+  it('tells the doctor who does record it instead', async () => {
+    stubConsole({ presence: { status: 'unknown' } })
+    renderConsole()
+
+    expect(
+      await screen.findByText(/A door reader or reception records it, not this screen/i),
+    ).toBeInTheDocument()
+  })
+
+  it('hides the arrival button once presence is recorded', async () => {
+    stubConsole()
+    renderAsReception()
+
+    // Anchored on the room, which only appears once presence has loaded *and*
+    // says "present". The doctor's name is no good here: reception also sees
+    // it in the doctor picker, which renders before any presence call lands.
+    await screen.findByText('Room OPD 12')
     expect(screen.queryByRole('button', { name: 'Mark me arrived' })).not.toBeInTheDocument()
   })
 
@@ -54,7 +82,7 @@ describe('presence', () => {
     const user = userEvent.setup()
     stubConsole({ presence: { status: 'unknown', deviation: 'absent_while_rostered' } })
     http.on('POST', '/presence/manual', fixtures.presence())
-    renderConsole()
+    renderAsReception()
 
     await user.click(await screen.findByRole('button', { name: 'Mark me arrived' }))
 

@@ -55,7 +55,13 @@ export function DoctorConsole() {
 
 function Console({ doctorId }: { doctorId: number }) {
   const { t, pick } = useLang()
+  const { user } = useAuth()
   const { busy, error: actionError, run } = useAction()
+
+  // Presence is something the hospital observes, not something the doctor
+  // declares — the backend allows only reception and admin to record it by
+  // hand. Offering the button to a doctor would only produce a refusal.
+  const canRecordPresence = user?.role === 'admin' || user?.role === 'staff'
 
   const presence = usePolling(() => api.presence(doctorId), REFRESH_MS, [doctorId])
   const queue = usePolling(
@@ -83,7 +89,7 @@ function Console({ doctorId }: { doctorId: number }) {
           <p>{presence.data?.department_name}</p>
         </div>
         <div className="row">
-          {presence.data?.status !== 'present' && (
+          {presence.data?.status !== 'present' && canRecordPresence && (
             <button
               type="button"
               className="btn"
@@ -167,10 +173,15 @@ function Console({ doctorId }: { doctorId: number }) {
         <>
           {presence.data?.status !== 'present' && (
             <div className="note note--warn">
-              {pick(
-                'जब तक उपस्थिति दर्ज नहीं होती, मरीज़ों को नहीं बुलाया जा सकता।',
-                'Patients cannot be called until your presence is recorded.',
-              )}
+              {canRecordPresence
+                ? pick(
+                    'जब तक उपस्थिति दर्ज नहीं होती, मरीज़ों को नहीं बुलाया जा सकता।',
+                    'Patients cannot be called until your presence is recorded.',
+                  )
+                : pick(
+                    'जब तक उपस्थिति दर्ज नहीं होती, मरीज़ों को नहीं बुलाया जा सकता। उपस्थिति दरवाज़े का रीडर या रिसेप्शन दर्ज करता है।',
+                    'Patients cannot be called until your presence is recorded. A door reader or reception records it, not this screen.',
+                  )}
             </div>
           )}
 

@@ -23,7 +23,7 @@ replaces the fiction with a live signal — **is the doctor physically here, rig
 | 9 | **Integration** | ABHA health ID, ORS, hospital HMIS/EHR — so this is not one more island |
 | 10 | **Security & Privacy** | Encryption, RBAC, audit logs, consent, face *signatures* never photos — DPDP Act 2023 |
 
-All ten are built, wired together and tested — **261 tests passing**.
+All ten are built, wired together and tested — **263 backend tests passing**.
 
 ## How the rooms feed each other
 
@@ -122,7 +122,7 @@ npm install --prefix frontend && npm run dev --prefix frontend
 The kiosk and corridor board ask for a device key on first use; in development
 it is `dev-device-key`.
 
-Run the tests — 261 backend, 150 frontend:
+Run the tests — 263 backend, 152 frontend:
 
 ```bash
 pytest -q
