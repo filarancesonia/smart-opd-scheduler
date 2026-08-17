@@ -10,6 +10,7 @@ from app.modules.doctors.router import router as doctors_router
 from app.modules.identity.router import router as identity_router
 from app.modules.analytics.router import router as analytics_router
 from app.modules.emergency.router import router as emergency_router
+from app.modules.integration.router import router as integration_router
 from app.modules.notifications.router import router as notifications_router
 from app.modules.presence.router import router as presence_router
 from app.modules.queue.router import router as queue_router
@@ -26,3 +27,4 @@ api_router.include_router(queue_router)  # Room 5
 api_router.include_router(notifications_router)  # Room 6
 api_router.include_router(emergency_router)  # Room 7
 api_router.include_router(analytics_router)  # Room 8
+api_router.include_router(integration_router)  # Room 9
