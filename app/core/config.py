@@ -35,6 +35,9 @@ class Settings(BaseSettings):
     # A presence signal older than this is no longer trusted as "live".
     presence_ttl_seconds: int = 300
 
+    # Room 4 - where trained model artifacts live
+    model_dir: str = "models"
+
     # Room 6 - notification providers
     sms_provider: str = "console"
     whatsapp_provider: str = "console"

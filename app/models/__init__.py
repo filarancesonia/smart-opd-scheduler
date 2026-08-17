@@ -18,6 +18,11 @@ from app.modules.doctors.models import (
     Leave,
 )
 from app.modules.identity.models import User
+from app.modules.scheduling.models import (
+    ConsultationRecord,
+    ModelArtifact,
+    SchedulePlan,
+)
 from app.modules.presence.models import (
     Device,
     PresenceEvent,
@@ -39,4 +44,7 @@ __all__ = [
     "Patient",
     "Appointment",
     "IVRSession",
+    "ConsultationRecord",
+    "ModelArtifact",
+    "SchedulePlan",
 ]
