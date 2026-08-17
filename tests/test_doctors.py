@@ -2,57 +2,12 @@
 
 from datetime import date, datetime, time, timedelta
 
-import pytest
-
 from app.core.security import credential_fingerprint
 from app.modules.doctors import service
-from app.modules.doctors.models import DoctorCredential, LeaveStatus
-from app.modules.doctors.schemas import (
-    CredentialCreate,
-    DutySlotCreate,
-    LeaveCreate,
-)
+from app.modules.doctors.models import DoctorCredential
 
 MONDAY = date(2026, 8, 17)  # a real Monday
 TUESDAY = MONDAY + timedelta(days=1)
-
-
-@pytest.fixture
-def admin(register_user):
-    return register_user(phone="9000000001", role="admin", full_name="Admin One")
-
-
-@pytest.fixture
-def department(client, admin):
-    _, headers = admin
-    resp = client.post(
-        "/api/v1/departments",
-        json={"name": "General Medicine", "code": "gm", "floor": "2"},
-        headers=headers,
-    )
-    assert resp.status_code == 201, resp.text
-    return resp.json()
-
-
-@pytest.fixture
-def doctor(client, admin, department, register_user):
-    _, admin_headers = admin
-    doc_user, doc_headers = register_user(
-        phone="9000000002", role="doctor", full_name="Dr. Sharma"
-    )
-    resp = client.post(
-        "/api/v1/doctors",
-        json={
-            "user_id": doc_user["id"],
-            "department_id": department["id"],
-            "registration_no": "MH-2019-45231",
-            "specialisation": "Internal Medicine",
-            "avg_consultation_minutes": 10,
-        },
-        headers=admin_headers,
-    )
-    assert resp.status_code == 201, resp.text
-    return resp.json(), doc_headers
 
 
 def test_department_code_is_uppercased_and_unique(client, admin, department):

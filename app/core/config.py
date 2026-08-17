@@ -17,6 +17,9 @@ class Settings(BaseSettings):
 
     database_url: str = "sqlite:///./opd.db"
 
+    # Instants are stored in UTC; rosters are wall-clock. This bridges them.
+    hospital_timezone: str = "Asia/Kolkata"
+
     # Room 10 - Security & Privacy
     secret_key: str = "change-me-in-production"
     jwt_algorithm: str = "HS256"

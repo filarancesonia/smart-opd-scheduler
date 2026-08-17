@@ -13,6 +13,12 @@ from app.modules.doctors.models import (
     Leave,
 )
 from app.modules.identity.models import User
+from app.modules.presence.models import (
+    Device,
+    PresenceEvent,
+    PresenceSignal,
+    PresenceState,
+)
 
 __all__ = [
     "User",
@@ -21,4 +27,8 @@ __all__ = [
     "DutySlot",
     "Leave",
     "DoctorCredential",
+    "Device",
+    "PresenceSignal",
+    "PresenceState",
+    "PresenceEvent",
 ]
