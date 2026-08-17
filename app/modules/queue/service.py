@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import logging
 from datetime import date, datetime, timedelta
 
 from sqlalchemy import select
@@ -32,6 +33,18 @@ MAX_SKIPS = 2
 
 #: How fast today's observed durations displace the model's prediction.
 CALIBRATION_FULL_WEIGHT_AT = 5
+
+logger = logging.getLogger("queue")
+
+
+def _notify(action: str, *args, **kwargs) -> None:
+    """Fire a Room 6 message without letting it disrupt the queue."""
+    try:
+        from app.modules.notifications import service as notifications
+
+        getattr(notifications, action)(*args, **kwargs)
+    except Exception:  # pragma: no cover - defensive
+        logger.exception("Notification %s failed", action)
 
 
 # --- sessions --------------------------------------------------------------
@@ -363,6 +376,8 @@ def call_next(db: Session, doctor_id: int) -> tuple[QueueEntry | None, str | Non
     db.commit()
     db.refresh(entry)
     recompute_etas(db, session)
+
+    _notify("notify_now_calling", db, entry)
     return entry, None, waiting_count - 1
 
 

@@ -18,6 +18,7 @@ from app.modules.doctors.models import (
     Leave,
 )
 from app.modules.identity.models import User
+from app.modules.notifications.models import Notification
 from app.modules.queue.models import QueueEntry, QueueSession
 from app.modules.scheduling.models import (
     ConsultationRecord,
@@ -50,4 +51,5 @@ __all__ = [
     "SchedulePlan",
     "QueueSession",
     "QueueEntry",
+    "Notification",
 ]

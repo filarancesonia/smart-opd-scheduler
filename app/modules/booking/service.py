@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import logging
 import secrets
 import uuid
 from datetime import date, time, timedelta
@@ -38,6 +39,22 @@ _REF_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"
 
 #: How far ahead booking is allowed to open.
 MAX_ADVANCE_DAYS = 30
+
+logger = logging.getLogger("booking")
+
+
+def _notify(action: str, *args, **kwargs) -> None:
+    """Fire a Room 6 message without letting it break the booking.
+
+    A patient whose appointment was saved but whose SMS gateway was down still
+    has an appointment. Imported lazily so Room 3 stays usable on its own.
+    """
+    try:
+        from app.modules.notifications import service as notifications
+
+        getattr(notifications, action)(*args, **kwargs)
+    except Exception:  # pragma: no cover - defensive
+        logger.exception("Notification %s failed", action)
 
 
 # --- patients --------------------------------------------------------------
@@ -283,6 +300,8 @@ def book(
     db.add(appointment)
     db.commit()
     db.refresh(appointment)
+
+    _notify("notify_booking_confirmed", db, appointment)
     return appointment
 
 
@@ -312,6 +331,11 @@ def cancel(db: Session, appointment_id: int, reason: str = "") -> Appointment:
     appointment.cancelled_reason = reason
     db.commit()
     db.refresh(appointment)
+
+    # Stop the reminders first: texting someone about a visit they cancelled
+    # is how a system teaches people to ignore it.
+    _notify("cancel_pending_for_appointment", db, appointment.id)
+    _notify("notify_cancelled", db, appointment, reason)
     return appointment
 
 
@@ -345,6 +369,9 @@ def reschedule(
     db.add(replacement)
     db.commit()
     db.refresh(replacement)
+
+    _notify("cancel_pending_for_appointment", db, old.id)
+    _notify("notify_rescheduled", db, replacement)
     return replacement
 
 
