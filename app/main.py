@@ -11,6 +11,7 @@ from app.api import api_router
 from app.core.config import settings
 from app.core.database import init_db
 from app.core.errors import register_error_handlers
+from app.modules.privacy.middleware import AuditMiddleware
 
 
 @asynccontextmanager
@@ -40,6 +41,10 @@ def create_app() -> FastAPI:
         allow_methods=["*"],
         allow_headers=["*"],
     )
+
+    # Room 10: record every state-changing request. Registered before the
+    # routers so it wraps all of them.
+    app.add_middleware(AuditMiddleware)
 
     register_error_handlers(app)
     app.include_router(api_router, prefix=settings.api_prefix)

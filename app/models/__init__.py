@@ -20,6 +20,12 @@ from app.modules.doctors.models import (
 from app.modules.identity.models import User
 from app.modules.emergency.models import EmergencyCase, PriorityOverride
 from app.modules.integration.models import ExternalLink, SyncLog
+from app.modules.privacy.models import (
+    AuditLog,
+    Consent,
+    DataSubjectRequest,
+    FaceTemplate,
+)
 from app.modules.notifications.models import Notification
 from app.modules.queue.models import QueueEntry, QueueSession
 from app.modules.scheduling.models import (
@@ -58,4 +64,8 @@ __all__ = [
     "PriorityOverride",
     "ExternalLink",
     "SyncLog",
+    "AuditLog",
+    "Consent",
+    "FaceTemplate",
+    "DataSubjectRequest",
 ]

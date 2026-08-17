@@ -18,7 +18,7 @@ settings.scrypt_cost_log2 = 11
 
 
 @pytest.fixture
-def db_session():
+def test_engine():
     # StaticPool keeps every connection pointed at the same in-memory database.
     engine = create_engine(
         "sqlite://",
@@ -28,19 +28,31 @@ def db_session():
     import app.models  # noqa: F401  (registers all tables)
 
     Base.metadata.create_all(bind=engine)
-    TestingSession = sessionmaker(bind=engine, autoflush=False, expire_on_commit=False)
+    yield engine
+    engine.dispose()
+
+
+@pytest.fixture
+def db_session(test_engine):
+    TestingSession = sessionmaker(
+        bind=test_engine, autoflush=False, expire_on_commit=False
+    )
     session = TestingSession()
     try:
         yield session
     finally:
         session.close()
-        engine.dispose()
 
 
 @pytest.fixture
-def client(db_session):
+def client(db_session, test_engine):
     app = create_app()
     app.dependency_overrides[get_db] = lambda: db_session
+    # Room 10's audit middleware opens its own session; point it at the test
+    # database so audit rows land where the test can see them.
+    app.state.audit_session_factory = sessionmaker(
+        bind=test_engine, autoflush=False, expire_on_commit=False
+    )
     with TestClient(app) as c:
         yield c
     app.dependency_overrides.clear()

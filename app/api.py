@@ -13,6 +13,7 @@ from app.modules.emergency.router import router as emergency_router
 from app.modules.integration.router import router as integration_router
 from app.modules.notifications.router import router as notifications_router
 from app.modules.presence.router import router as presence_router
+from app.modules.privacy.router import router as privacy_router
 from app.modules.queue.router import router as queue_router
 from app.modules.scheduling.router import router as scheduling_router
 
@@ -28,3 +29,4 @@ api_router.include_router(notifications_router)  # Room 6
 api_router.include_router(emergency_router)  # Room 7
 api_router.include_router(analytics_router)  # Room 8
 api_router.include_router(integration_router)  # Room 9
+api_router.include_router(privacy_router)  # Room 10

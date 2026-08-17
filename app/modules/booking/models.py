@@ -29,6 +29,7 @@ from sqlalchemy import (
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.database import Base, TimestampMixin
+from app.modules.privacy.crypto import EncryptedString
 
 
 class BookingChannel(StrEnum):
@@ -68,10 +69,15 @@ class Patient(TimestampMixin, Base):
         ForeignKey("users.id", ondelete="SET NULL"), nullable=True, index=True
     )
     full_name: Mapped[str] = mapped_column(String(150))
+    # Kept queryable: reception looks a patient up by phone dozens of times a
+    # day. Room 10 ships a blind index for encrypting this without losing
+    # exact-match lookup; that migration is not done yet, and saying so is
+    # better than implying the column is protected when it is not.
     phone: Mapped[str] = mapped_column(String(20), index=True)
     age: Mapped[int | None] = mapped_column(Integer, nullable=True)
     gender: Mapped[str | None] = mapped_column(String(10), nullable=True)
-    address: Mapped[str] = mapped_column(Text, default="")
+    # Free text, never searched, and genuinely identifying — encrypted at rest.
+    address: Mapped[str] = mapped_column(EncryptedString, default="")
     abha_id: Mapped[str | None] = mapped_column(String(64), nullable=True, index=True)
     preferred_language: Mapped[str] = mapped_column(String(5), default="hi")
 
