@@ -58,15 +58,20 @@ def _history(db: Session, patient_id: int, before: date) -> tuple[int, int]:
 def priority_tier_for(patient: Patient | None) -> int:
     """Baseline vulnerability tier.
 
-    Room 7 owns emergency triage and overrides this with higher tiers; what
-    remains here is the standing entitlement of people who should not be left
-    standing in a corridor.
+    Room 7 owns the rule; this delegates so there is exactly one definition of
+    who counts as vulnerable. Falls back to a local copy if Room 7 is not
+    deployed, so the scheduler still works on its own.
     """
-    if patient is None:
-        return 0
-    if patient.is_pregnant or patient.has_disability or patient.is_senior_citizen:
-        return 1
-    return 0
+    try:
+        from app.modules.emergency import service as emergency_service
+
+        return emergency_service.priority_tier_for(patient)
+    except ImportError:  # pragma: no cover - defensive
+        if patient is None:
+            return 0
+        return int(
+            patient.is_pregnant or patient.has_disability or patient.is_senior_citizen
+        )
 
 
 def build_context(

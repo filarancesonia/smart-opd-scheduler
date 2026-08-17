@@ -13,7 +13,7 @@ from sqlalchemy.orm import Session
 
 from app.core.database import utcnow
 from app.core.errors import ConflictError, NotFoundError, ValidationError
-from app.core.timeutil import local_today
+from app.core.timeutil import local_now, local_today
 from app.modules.booking.models import (
     Appointment,
     AppointmentStatus,
@@ -198,9 +198,17 @@ def _presence_warning(db: Session, doctor_id: int, on_date: date) -> str | None:
 
 
 def _pick_slot(
-    db: Session, doctor_id: int, on_date: date, preferred: time | None
+    db: Session,
+    doctor_id: int,
+    on_date: date,
+    preferred: time | None,
+    *,
+    bypass_capacity: bool = False,
 ) -> SlotOut:
     day = build_day_slots(db, doctor_id, on_date)
+
+    if bypass_capacity:
+        return _emergency_slot(db, doctor_id, day)
 
     if day.is_on_leave:
         raise ConflictError("The doctor is on leave on this date")
@@ -224,6 +232,32 @@ def _pick_slot(
     if free is None:
         raise ConflictError("This clinic is fully booked")
     return free
+
+
+def _emergency_slot(db: Session, doctor_id: int, day: DaySlots) -> SlotOut:
+    """Room 7 insertion: capacity does not apply to an emergency.
+
+    Someone bleeding in the corridor does not become less urgent because the
+    clinic is notionally full. Takes a free slot if one exists, and appends
+    one past the end of the list if not — the live queue in Room 5 decides
+    the real order anyway.
+    """
+    free = next((s for s in day.slots if s.available), None)
+    if free is not None:
+        return free
+
+    doctor = doctors_service.get_doctor(db, doctor_id)
+    step = max(doctor.avg_consultation_minutes, 1)
+    if day.slots:
+        start, room = day.slots[-1].end, day.slots[-1].room
+    else:
+        start, room = local_now().time(), _default_room(db, doctor_id, day.date)
+    return SlotOut(start=start, end=_add_minutes(start, step), room=room, available=True)
+
+
+def _default_room(db: Session, doctor_id: int, on_date: date) -> str:
+    availability = doctors_service.get_day_availability(db, doctor_id, on_date)
+    return availability.windows[0].room if availability.windows else ""
 
 
 # --- booking ---------------------------------------------------------------
@@ -258,29 +292,44 @@ def book(
     payload: AppointmentCreate,
     channel: BookingChannel,
     booked_by_user_id: int | None = None,
+    bypass_capacity: bool = False,
 ) -> Appointment:
+    """Create an appointment.
+
+    ``bypass_capacity`` is reserved for Room 7 emergency insertions: it skips
+    the capacity ceiling, the leave check and the duplicate guard, none of
+    which should stop a patient who has just arrived by ambulance.
+    """
     patient = get_patient(db, patient_id)
     doctor = doctors_service.get_doctor(db, payload.doctor_id)
-    _validate_date(payload.appointment_date)
 
-    if not doctor.is_accepting_patients:
-        raise ConflictError("This doctor is not accepting appointments at present")
+    if not bypass_capacity:
+        _validate_date(payload.appointment_date)
 
-    duplicate = db.execute(
-        select(Appointment).where(
-            Appointment.patient_id == patient_id,
-            Appointment.doctor_id == payload.doctor_id,
-            Appointment.appointment_date == payload.appointment_date,
-            Appointment.status.in_(AppointmentStatus.active()),
-        )
-    ).scalar_one_or_none()
-    if duplicate is not None:
-        raise ConflictError(
-            "This patient already has an appointment with this doctor that day",
-            details={"booking_reference": duplicate.booking_reference},
-        )
+        if not doctor.is_accepting_patients:
+            raise ConflictError("This doctor is not accepting appointments at present")
 
-    slot = _pick_slot(db, payload.doctor_id, payload.appointment_date, payload.preferred_start)
+        duplicate = db.execute(
+            select(Appointment).where(
+                Appointment.patient_id == patient_id,
+                Appointment.doctor_id == payload.doctor_id,
+                Appointment.appointment_date == payload.appointment_date,
+                Appointment.status.in_(AppointmentStatus.active()),
+            )
+        ).scalar_one_or_none()
+        if duplicate is not None:
+            raise ConflictError(
+                "This patient already has an appointment with this doctor that day",
+                details={"booking_reference": duplicate.booking_reference},
+            )
+
+    slot = _pick_slot(
+        db,
+        payload.doctor_id,
+        payload.appointment_date,
+        payload.preferred_start,
+        bypass_capacity=bypass_capacity,
+    )
 
     appointment = Appointment(
         booking_reference=_generate_reference(db),

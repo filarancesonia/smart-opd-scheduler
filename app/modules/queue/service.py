@@ -220,6 +220,11 @@ def reorder(db: Session, session: QueueSession) -> dict:
     """
     from app.core.timeutil import to_local
 
+    # Room 7 first: anyone displaced past the threshold moves up a tier before
+    # the ordering is computed, so a morning of emergencies cannot leave the
+    # same people on the bench until closing time.
+    _apply_aging(db, session.id)
+
     waiting = [
         e
         for e in open_entries(db, session.id)
@@ -265,6 +270,16 @@ def reorder(db: Session, session: QueueSession) -> dict:
         "improvement_pct": result.improvement_pct,
         "notes": result.notes,
     }
+
+
+def _apply_aging(db: Session, session_id: int) -> None:
+    """Run Room 7's anti-starvation sweep, if that module is deployed."""
+    try:
+        from app.modules.emergency import service as emergency_service
+
+        emergency_service.apply_aging(db, session_id)
+    except ImportError:  # pragma: no cover - defensive
+        pass
 
 
 def _effective_duration(session: QueueSession, entry: QueueEntry) -> float:
