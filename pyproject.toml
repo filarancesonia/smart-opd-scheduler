@@ -1,0 +1,17 @@
+[project]
+name = "smart-opd-scheduler"
+version = "0.1.0"
+description = "Presence-aware OPD scheduling for government hospitals"
+requires-python = ">=3.11"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+asyncio_default_fixture_loop_scope = "function"
+filterwarnings = ["ignore::DeprecationWarning"]
+
+[tool.ruff]
+line-length = 90
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B"]

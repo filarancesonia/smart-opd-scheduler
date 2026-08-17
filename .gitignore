@@ -1,0 +1,22 @@
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+env/
+
+.env
+*.db
+*.sqlite3
+
+# Trained model binaries (regenerate with `python -m app.modules.scheduling.train`)
+models/*.joblib
+
+.pytest_cache/
+.coverage
+htmlcov/
+
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
