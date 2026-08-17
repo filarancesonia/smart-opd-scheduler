@@ -18,6 +18,7 @@ from app.modules.doctors.models import (
     Leave,
 )
 from app.modules.identity.models import User
+from app.modules.queue.models import QueueEntry, QueueSession
 from app.modules.scheduling.models import (
     ConsultationRecord,
     ModelArtifact,
@@ -47,4 +48,6 @@ __all__ = [
     "ConsultationRecord",
     "ModelArtifact",
     "SchedulePlan",
+    "QueueSession",
+    "QueueEntry",
 ]

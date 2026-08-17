@@ -10,7 +10,7 @@ from sqlalchemy.orm import Session
 
 from app.core.database import utcnow
 from app.core.errors import ConflictError, NotFoundError
-from app.core.timeutil import local_now, local_today
+from app.core.timeutil import as_utc, local_now, local_today
 from app.modules.booking.models import Appointment, AppointmentStatus, Patient
 from app.modules.doctors import service as doctors_service
 from app.modules.identity.models import User
@@ -307,6 +307,12 @@ def record_consultation(
         return existing
 
     ctx = build_context(db, appointment, slot_index=slot_index)
+
+    # SQLite hands back naive datetimes even for timezone-aware columns, so
+    # anything that came out of the database is normalised before arithmetic.
+    actual_start = as_utc(actual_start) if actual_start else None
+    actual_end = as_utc(actual_end) if actual_end else None
+
     duration = None
     if actual_start and actual_end and not was_no_show:
         duration = max(int((actual_end - actual_start).total_seconds() // 60), 1)
